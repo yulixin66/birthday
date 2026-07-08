@@ -149,6 +149,7 @@
             transform: scale(0.8);
             transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
             text-shadow: 0 0 20px rgba(255, 180, 220, 0.5);
+            touch-action: manipulation; /* 优化触摸响应 */
         }
         #blow-btn.show {
             display: inline-block;
@@ -877,15 +878,30 @@
             }, 600);
         };
 
-        // --- 点击蛋糕检测 ---
+        // --- 点击蛋糕检测（同时支持鼠标和触摸） ---
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
-        renderer.domElement.addEventListener('click', (event) => {
+        function onPointerDown(event) {
             if (!sceneActive) return;
+
+            // 获取触摸或鼠标坐标
+            let clientX, clientY;
+            if (event.touches) {
+                // 触摸事件
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+                event.preventDefault(); // 阻止滚动
+            } else {
+                // 鼠标事件
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
             const rect = renderer.domElement.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            const x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            const y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
             pointer.set(x, y);
             raycaster.setFromCamera(pointer, camera);
 
@@ -922,10 +938,17 @@
                     }
                 });
             }
-        });
+        }
 
-        // --- 吹蜡烛 ---
-        blowBtn.addEventListener('click', () => {
+        // 绑定鼠标和触摸事件
+        renderer.domElement.addEventListener('click', onPointerDown);
+        renderer.domElement.addEventListener('touchstart', onPointerDown, { passive: false });
+
+        // --- 吹蜡烛按钮（同时支持鼠标和触摸） ---
+        function onBlowClick(event) {
+            if (event.type === 'touchstart') {
+                event.preventDefault(); // 防止触发两次
+            }
             if (!candleLit || blown) return;
             blown = true;
             candleLit = false;
@@ -993,7 +1016,11 @@
                     }, 600);
                 }
             }, 30);
-        });
+        }
+
+        // 绑定按钮事件
+        blowBtn.addEventListener('click', onBlowClick);
+        blowBtn.addEventListener('touchstart', onBlowClick, { passive: false });
 
         // --- 音乐 ---
         window.toggleMusic = function() {
