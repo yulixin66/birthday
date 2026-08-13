@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>✨ 生日快乐 ✨</title>
+    <title>✨ 李卓研 · 22岁生日快乐 ✨</title>
     <style>
         body {
             margin: 0;
@@ -149,7 +149,7 @@
             transform: scale(0.8);
             transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s ease;
             text-shadow: 0 0 20px rgba(255, 180, 220, 0.5);
-            touch-action: manipulation; /* 优化触摸响应 */
+            touch-action: manipulation;
         }
         #blow-btn.show {
             display: inline-block;
@@ -160,7 +160,6 @@
             transform: scale(1.05) !important;
         }
 
-        /* 主文案上移 */
         #message {
             position: absolute;
             top: 6%;
@@ -190,7 +189,6 @@
             text-shadow: 0 0 30px rgba(255, 180, 220, 0.9);
         }
 
-        /* 底部提示文案 */
         #hint {
             position: absolute;
             bottom: 150px;
@@ -209,7 +207,6 @@
             opacity: 1;
             animation: pulse 2s infinite;
         }
-        /* 最终祝福：改为粉色，增加发光，加强视觉 */
         #hint.highlight {
             color: #ff9bcb;
             font-size: 22px;
@@ -259,7 +256,6 @@
             transform: scale(1.1);
         }
 
-        /* 场景容器 */
         #scene-container {
             display: none;
             width: 100%;
@@ -274,7 +270,6 @@
 
     <div id="loading">🎂 加载中 ...</div>
 
-    <!-- 开篇信封 -->
     <div id="envelope-overlay">
         <div id="envelope" onclick="openEnvelope()">
             <div class="envelope-inner">
@@ -292,7 +287,6 @@
         </div>
     </div>
 
-    <!-- 主场景 -->
     <div id="scene-container">
         <div id="message">
             <span id="msg-text"></span>
@@ -300,7 +294,7 @@
         </div>
         <div id="hint"></div>
         <div id="ui">
-            <button id="blow-btn">🎂 吹蜡烛</button>
+            <button id="blow-btn">🎂许愿吹蜡烛吧！</button>
         </div>
         <div id="music-control" onclick="toggleMusic()">🔇</div>
         <audio id="bgm" loop preload="auto">
@@ -578,37 +572,47 @@
             }
         }
 
-        // --- 加载照片 ---
+        // --- 加载多张照片（6张不同） ---
         const textureLoader = new THREE.TextureLoader();
-        let photoTexture = null;
-        try {
-            photoTexture = textureLoader.load('her.jpg',
-                () => console.log('✅ 照片加载成功'),
+        // 备用纹理（用于加载失败时）
+        const fallbackCanvas = document.createElement('canvas');
+        fallbackCanvas.width = 256;
+        fallbackCanvas.height = 256;
+        const ctx = fallbackCanvas.getContext('2d');
+        ctx.clearRect(0, 0, 256, 256);
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, 20, 216, 216);
+        ctx.fillStyle = '#666';
+        ctx.font = '60px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('📸', 128, 130);
+        ctx.fillStyle = '#999';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('加载失败', 128, 200);
+        const fallbackTexture = new THREE.CanvasTexture(fallbackCanvas);
+
+        // 照片文件名列表（请确保这些文件存在，且为 .jpg 格式）
+        const photoFiles = ['her.jpg', 'her1.jpg', 'her2.jpg', 'her3.jpg', 'her4.jpg', 'her5.jpg'];
+        const photoTextures = [];
+
+        for (let i = 0; i < photoFiles.length; i++) {
+            const file = photoFiles[i];
+            const tex = textureLoader.load(file,
+                () => console.log(`✅ ${file} 加载成功`),
                 undefined,
-                (err) => console.warn('⚠️ 照片加载失败，使用备用', err)
+                (err) => {
+                    console.warn(`⚠️ ${file} 加载失败，使用备用`, err);
+                    // 将当前纹理替换为备用纹理内容
+                    tex.image = fallbackTexture.image;
+                    tex.needsUpdate = true;
+                }
             );
-        } catch(e) {}
-        if (!photoTexture) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 256, 256);
-            ctx.strokeStyle = '#888';
-            ctx.lineWidth = 3;
-            ctx.strokeRect(20, 20, 216, 216);
-            ctx.fillStyle = '#666';
-            ctx.font = '60px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('📸', 128, 130);
-            ctx.fillStyle = '#999';
-            ctx.font = '20px sans-serif';
-            ctx.fillText('照片加载失败', 128, 200);
-            photoTexture = new THREE.CanvasTexture(canvas);
+            photoTextures.push(tex);
         }
 
-        // --- 照片墙 ---
+        // --- 照片墙（6个位置，分别使用不同照片） ---
         const photoGroup = new THREE.Group();
         const photoCount = 6;
         const photoRadius = 4.2;
@@ -621,7 +625,7 @@
             const z = Math.cos(angle) * photoRadius;
 
             const mat = new THREE.MeshStandardMaterial({
-                map: photoTexture,
+                map: photoTextures[i], // 使用不同的纹理
                 side: THREE.DoubleSide,
                 roughness: 0.15,
                 metalness: 0.05,
@@ -824,7 +828,7 @@
         const hintEl = document.getElementById('hint');
         const sceneContainer = document.getElementById('scene-container');
 
-        // --- 辅助：显示提示（自动清除旧提示） ---
+        // --- 辅助：显示提示 ---
         function showHint(text, isHighlight = false, duration = 0) {
             hintEl.textContent = text;
             hintEl.className = '';
@@ -861,8 +865,9 @@
                     }).catch(() => {});
                 }
 
-                showHint('💡 点击蛋糕，许个愿吧', false, 0); // 持续显示
+                showHint('💡 点击蛋糕，许个愿吧', false, 0);
 
+                // 照片淡入
                 photoGroup.children.forEach(child => {
                     if (child.isMesh && child.material && child.material.opacity !== undefined) {
                         child.material.opacity = 0;
@@ -878,22 +883,19 @@
             }, 600);
         };
 
-        // --- 点击蛋糕检测（同时支持鼠标和触摸） ---
+        // --- 点击蛋糕检测 ---
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
 
         function onPointerDown(event) {
             if (!sceneActive) return;
 
-            // 获取触摸或鼠标坐标
             let clientX, clientY;
             if (event.touches) {
-                // 触摸事件
                 clientX = event.touches[0].clientX;
                 clientY = event.touches[0].clientY;
-                event.preventDefault(); // 阻止滚动
+                event.preventDefault();
             } else {
-                // 鼠标事件
                 clientX = event.clientX;
                 clientY = event.clientY;
             }
@@ -907,11 +909,9 @@
 
             const intersects = raycaster.intersectObjects(cakeGroup.children, true);
             if (intersects.length > 0 && candleLit && !blown) {
-                // 立即显示按钮
                 blowBtn.classList.add('show');
                 showHint('🎂 点击“吹蜡烛”按钮！', false, 0);
 
-                // 异步特效
                 requestAnimationFrame(() => {
                     cakeGroup.position.y = -0.1;
                     setTimeout(() => cakeGroup.position.y = -0.1, 150);
@@ -940,21 +940,19 @@
             }
         }
 
-        // 绑定鼠标和触摸事件
         renderer.domElement.addEventListener('click', onPointerDown);
         renderer.domElement.addEventListener('touchstart', onPointerDown, { passive: false });
 
-        // --- 吹蜡烛按钮（同时支持鼠标和触摸） ---
+        // --- 吹蜡烛按钮 ---
         function onBlowClick(event) {
             if (event.type === 'touchstart') {
-                event.preventDefault(); // 防止触发两次
+                event.preventDefault();
             }
             if (!candleLit || blown) return;
             blown = true;
             candleLit = false;
             blowBtn.classList.remove('show');
 
-            // 显示"许个愿吧"，1.5秒后自动清除
             showHint('🎉 许个愿吧！', false, 1500);
 
             const shrink = setInterval(() => {
@@ -998,7 +996,6 @@
                                             (Math.random()-0.5)*5, 1.5+Math.random()*3, (Math.random()-0.5)*5
                                         ), i*250);
                                     }
-                                    // 最终祝福（粉色高亮）
                                     showHint('💖 生日快乐，卓研！', true, 0);
                                     setTimeout(() => {
                                         const positions2 = heartPosAttr2.array;
@@ -1018,7 +1015,6 @@
             }, 30);
         }
 
-        // 绑定按钮事件
         blowBtn.addEventListener('click', onBlowClick);
         blowBtn.addEventListener('touchstart', onBlowClick, { passive: false });
 
@@ -1115,7 +1111,7 @@
             labelRenderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        console.log('🎂 卓研，22岁生日快乐！');
+        console.log('🎂 李卓研，22岁生日快乐！');
     </script>
 </body>
 </html>
