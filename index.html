@@ -846,42 +846,60 @@
             }
         }
 
-        // --- 打开信封 ---
+        // --- 打开信封（只负责翻转） ---
         window.openEnvelope = function() {
             const envelope = document.getElementById('envelope');
-            const overlay = document.getElementById('envelope-overlay');
             envelope.querySelector('.envelope-inner').style.transform = 'rotateY(180deg)';
-
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                sceneContainer.classList.add('active');
-                sceneActive = true;
-
-                const bgm = document.getElementById('bgm');
-                if (bgm.paused) {
-                    bgm.volume = 0.3;
-                    bgm.play().then(() => {
-                        document.getElementById('music-control').textContent = '🔊';
-                    }).catch(() => {});
-                }
-
-                showHint('💡 点击蛋糕，许个愿吧', false, 0);
-
-                // 照片淡入
-                photoGroup.children.forEach(child => {
-                    if (child.isMesh && child.material && child.material.opacity !== undefined) {
-                        child.material.opacity = 0;
-                        const fade = setInterval(() => {
-                            child.material.opacity = Math.min(0.95, child.material.opacity + 0.05);
-                            if (child.material.opacity >= 0.95) clearInterval(fade);
-                        }, 20);
-                    }
-                });
-
-                controls.target.set(0, 2.2, 0);
-                controls.update();
-            }, 600);
+            document.querySelector('.envelope-front').style.pointerEvents = 'none';
         };
+
+        // --- 进入场景（由“点击进入”触发） ---
+        function goToScene(e) {
+            if (e) {
+                e.stopPropagation();
+                if (e.type === 'touchstart') e.preventDefault();
+            }
+            if (sceneActive) return;
+
+            const overlay = document.getElementById('envelope-overlay');
+            const container = document.getElementById('scene-container');
+
+            overlay.classList.add('hidden');
+            container.classList.add('active');
+            sceneActive = true;
+
+            const bgm = document.getElementById('bgm');
+            if (bgm.paused) {
+                bgm.volume = 0.3;
+                bgm.play().then(() => {
+                    document.getElementById('music-control').textContent = '🔊';
+                }).catch(() => {});
+            }
+
+            showHint('💡 点击蛋糕，许个愿吧', false, 0);
+
+            // 照片淡入
+            photoGroup.children.forEach(child => {
+                if (child.isMesh && child.material && child.material.opacity !== undefined) {
+                    child.material.opacity = 0;
+                    const fade = setInterval(() => {
+                        child.material.opacity = Math.min(0.95, child.material.opacity + 0.05);
+                        if (child.material.opacity >= 0.95) clearInterval(fade);
+                    }, 20);
+                }
+            });
+
+            controls.target.set(0, 2.2, 0);
+            controls.update();
+        }
+
+        // --- 监听“点击进入” ---
+        const sub = document.querySelector('.sub');
+        sub.addEventListener('click', goToScene);
+        sub.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            goToScene(e);
+        }, { passive: false });
 
         // --- 点击蛋糕检测 ---
         const raycaster = new THREE.Raycaster();
